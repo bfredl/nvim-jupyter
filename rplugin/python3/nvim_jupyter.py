@@ -6,9 +6,9 @@ class NVimJupyter:
     def __init__(self, vim):
         self.vim = vim
 
-    @neovim.command('Test', range='', nargs='*', sync=True)
-    def command_handler(self, args, range):
+    @neovim.encoding
+    @neovim.command('JConnect', nargs='*', sync=True)
+    def jconnect_handler(self, args):
         self.vim.current.line = (
-            'Called command Test: args: {}, range: {}'
-            .format(args, range)
+            'JConnect: {}'.format(args)
         )
