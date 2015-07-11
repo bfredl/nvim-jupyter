@@ -3,12 +3,11 @@ import neovim
 
 @neovim.plugin
 class NVimJupyter:
-    def __init__(self, vim):
-        self.vim = vim
+    def __init__(self, con_nvim):
+        self._con_nvim = con_nvim.with_hook(neovim.DecodeHook())
 
     @neovim.command('JConnect', nargs='*', sync=True)
-    @neovim.encoding
     def jconnect_handler(self, args):
-        self.vim.current.line = (
+        self._con_nvim.current.line = (
             'JConnect: {}'.format(args)
         )
