@@ -9,6 +9,6 @@ class NVimJupyter:
     @neovim.command('Test', range='', nargs='*', sync=True)
     def command_handler(self, args, range):
         self.vim.current.line = (
-            'Command: Called {} times, args: {}, range: {}'
-            .format(self.calls, args, range)
+            'Called command Test: args: {}, range: {}'
+            .format(args, range)
         )
