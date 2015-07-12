@@ -1,3 +1,24 @@
+'''
+# nvim-jupyter (_testing_)
+
+Flexible [neovim] - [jupyter] kernel interaction. Outputs the following
+functionality to [neovim]:
+
+(c) `jconnect [--existing filehint]`
+    connect to new or existing kernel (using the `[--existing filehint]`)
+    argument, where `[filehint]` is either the `*` (star) in `kernel-*.json`
+    or the absolute path of the connection file.
+(c) `[range]jexecute`
+    Send current line to be executed by the kernel or if `[range]` is given
+    execute the appropriate lines.
+
+Legend (c) = command
+
+Stay tuned, more to come!
+
+[neovim]: http://neovim.io/
+[jupyter]: https://jupyter.org/
+'''
 import argparse
 import jupyter_client as jc
 import logging
@@ -20,45 +41,65 @@ l = logging.getLogger(__name__)
 @nv.plugin
 class NVimJupyter:
     def __init__(self, nvim):
-        self._nvim = nvim.with_hook(nv.DecodeHook())
-        self._argp = self._set_argparser(
-            prog='NVimJupyter', args_to_set={
+        self.nvim = nvim.with_hook(nv.DecodeHook())
+        self.new_kernel_started = None
+        self.kc = None
+        self._argp = None
+        self._buffer = None
+
+    @property
+    def argp(self):
+        if self._argp is None:
+            args_to_set = {
                 ('--existing',): {'nargs': 1}
             }
-        )
-        self._new_kernel_started = self._km = self._kc = None
+            self._argp = argparse.ArgumentParser('NVimJupyter')
+            for a, kw in args_to_set.items():
+                self._argp.add_argument(*a, **kw)
+        return self._argp
 
-    @nv.command('JConnect', nargs='*', sync=True)
+    @property
+    def buffer(self):
+        if self._buffer is None:
+            self.nvim.command('5new')
+            self.nvim.current.buffer.name = '[IPython]'
+            self.nvim.current.buffer.options['buftype'] = 'nofile'
+            self.nvim.current.buffer.options['bufhidden'] = 'hide'
+            self.nvim.current.buffer.options['swapfile'] = False
+            self.nvim.current.buffer.options['readonly'] = True
+            self._buffer = self.nvim.current.buffer
+            # self.nvim.command('wincmd j')
+        return self._buffer
+
+    @nv.command('jconnect', nargs='*', sync=True)
     def connect_handler(self, args):
-        args = list(map(bytes.decode, args))
-        args = self._argp.parse_args(args)
-        try:
-            self._kc = self._connect_to_existing_kernel(args.existing[0])
-            self._new_kernel_started = False
-        except AttributeError:
-            self._kc = self._connect_to_new_kernel(args)
-            self._new_kernel_started = True
-        l.debug('kernel started: {}'.format(self._kc.kernel_info()))
+        args = self._decode_args(args)
+        args = self.argp.parse_args(args)
+        if args.existing:
+            self.kc = self._connect_to_existing_kernel(args.existing[0])
+            self.new_kernel_started = False
+        else:
+            self.kc = self._connect_to_new_kernel(args)
+            self.new_kernel_started = True
+        l.debug('kernel started: {}'.format(self.kc.get_shell_msg()))
 
-    @nv.function('JExecute')
-    def execute_handler(self, args):
-        l.debug('inside execute_handler')
-        r = self._nvim.current.range
-        l.debug('range: {}, {}'.format(r, self._nvim.current.buffer[r.start:r.end+1]))
-        lines = '\n'.join(self._nvim.current.buffer[r.start:r.end+1])
-        l.debug('lines: {}'.format(lines))
+    @nv.command('jexecute', range='')
+    def execute_handler(self, r):
+        r0, r1 = r
+        lines = '\n'.join(self.nvim.current.buffer[r0 - 1:r1])
+        msg_id = self.kc.execute(lines)
+        response = self.kc.get_shell_msg()
+        if msg_id != response['parent_header']['msg_id']:
+            l.debug('execute_handler: something not right!')
+        l.debug('{} - {}'.format(msg_id, response))
+        l.debug('execute_handler: {}'.format(lines))
+        self._print_to_buffer(response)
 
     @nv.shutdown_hook
     def shutdown(self):
         l.debug('shutdown hook')
-        if self._new_kernel_started is True:
-            self._kc.shutdown()
-
-    def _set_argparser(self, prog='DummyProg', args_to_set={}):
-        argp = argparse.ArgumentParser(prog=prog)
-        for a, kw in args_to_set.items():
-            argp.add_argument(*a, **kw)
-        return argp
+        if self.new_kernel_started is True:
+            self.kc.shutdown()
 
     def _connect_to_existing_kernel(self, filehint):
         connection_file = (filehint
@@ -78,11 +119,11 @@ class NVimJupyter:
         km.start_channels()
         return kc
 
-    def _execute(self, code, timeout=1):
-        msg_id = self._kc.execute(code)
-        while True:
-            msg = self._kc.get_shell_msg(timeout=timeout)
-            if msg['parent_header']['msg_id'] == msg_id:
-                break
-        l.debug('execute: {}, response: {}'.format(code, msg))
-        return msg['content']
+    def _print_to_buffer(self, response):
+        self.buffer.append('Out[{execution_count}]:\n'
+                           .format(**response['content']))
+
+    def _decode_args(self, args):
+        encoding = self.nvim.eval('&encoding')
+        return [arg.decode(encoding) if isinstance(arg, bytes) else arg
+                for arg in args]
