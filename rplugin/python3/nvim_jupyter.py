@@ -19,8 +19,8 @@ l = logging.getLogger(__name__)
 
 @nv.plugin
 class NVimJupyter:
-    def __init__(self, con_nvim):
-        self._con_nvim = con_nvim.with_hook(nv.DecodeHook())
+    def __init__(self, nvim):
+        self._nvim = nvim.with_hook(nv.DecodeHook())
         self._argp = self._set_argparser(
             prog='NVimJupyter', args_to_set={
                 ('--existing',): {'nargs': 1}
@@ -42,7 +42,11 @@ class NVimJupyter:
 
     @nv.function('JExecute')
     def execute_handler(self, args):
-        l.debug('execute: {}'.args)
+        l.debug('inside execute_handler')
+        r = self._nvim.current.range
+        l.debug('range: {}, {}'.format(r, self._nvim.current.buffer[r.start:r.end+1]))
+        lines = '\n'.join(self._nvim.current.buffer[r.start:r.end+1])
+        l.debug('lines: {}'.format(lines))
 
     @nv.shutdown_hook
     def shutdown(self):
@@ -74,11 +78,11 @@ class NVimJupyter:
         km.start_channels()
         return kc
 
-    def _execute(self, code):
+    def _execute(self, code, timeout=1):
         msg_id = self._kc.execute(code)
         while True:
-            msg = self._kc.get_shell_msg(timeout=1)
+            msg = self._kc.get_shell_msg(timeout=timeout)
             if msg['parent_header']['msg_id'] == msg_id:
                 break
         l.debug('execute: {}, response: {}'.format(code, msg))
-        return msg
+        return msg['content']
