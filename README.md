@@ -17,9 +17,7 @@ functionality:
 Legend `(c)` = command
 
 
-## installation
-
-**Under heavy development - not ready for use**
+## installation (_not ready for use_)
 
 For whoever feels adventurous enough, I highly recommend [`vim-plug`].
 
