@@ -1,12 +1,16 @@
 """
-Flexible [neovim] - [Jupyter] kernel interaction. Augments [neovim] with the following
-functionality:
+Flexible [neovim] - [Jupyter] kernel interaction. Augments [neovim] with the
+following functionality:
 
-- `(c) JConnect [--existing filehint]` - **first connect to kernel**
+- `(c) JKernel [-e/--existing [filehint]]` - **first connect to kernel**
 
-  connect to new or existing kernel (using the `[--existing filehint]`)
+  connect to new or existing kernel (using the `[-e/--existing [filehint]]`)
   argument, where `[filehint]` is either the `*` (star) in `kernel-*.json`
-  or the absolute path of the connection file.
+  or the absolute path of the connection file. If `JKernel` is used without any
+  arguments then it starts a new kernel. If `-e/--existing` is provided
+  (without the optional [filehint]) then an attempt to connect to an existing
+  kernel is made. If kernel is not found then it doesn't create a new kernel.
+  If [filehint] is given and not found, again, it doesn't create a kernel.
 
 - `(c) [range]JExecute`
 
@@ -31,6 +35,7 @@ Legend `(c)` = command
 [Jupyter]: https://jupyter.org/
 """
 
+import jupyter_client as jc
 import neovim as nv
 from . import config as c
 from . import utils as u
@@ -57,7 +62,7 @@ class NVimJupyter:
         self.window = None
         self.kc = None
 
-    @nv.command('JConnect', nargs='*', sync=True)
+    @nv.command('JKernel', nargs='*', sync=True)
     def connect_handler(self, args):
         """`neovim` command for connecting to new or existing kernel
 
@@ -72,23 +77,26 @@ class NVimJupyter:
         `str`. Need to manually decode them.
         """
         args = u.decode_args(self.nvim, args)
-        args = self.argp.parse_args(['JConnect'] + args)
-        if args.existing:
-            self.kc = u.connect_to_existing_kernel(args.existing[0])
-            self.new_kernel_started = False
-        else:
-            self.kc = u.connect_to_new_kernel(args)
-            self.new_kernel_started = True
-        if self.buffer is None:
-            self.buffer, self.window = u.set_buffer(self.nvim)
-        # consume first iopub message (starting)
-        self.kc.get_iopub_msg()
-        self._print_to_buffer(
-            ['Jupyter {implementation_version} /'
-             ' Python {language_info[version]}'
-             .format(**self.kc.get_shell_msg()['content']),
-             '']
-        )
+        args = self.argp.parse_args(['JKernel'] + args)
+        try:
+            l.debug('KERNEL START')
+            self.kc, self.new_kernel_started = self._connect_to_kernel(args)
+            l.debug('KERNEL BUFF')
+            if self.buffer is None:
+                self.buffer, self.window = self._set_buffer()
+            # consume first iopub message (starting)
+            self.kc.get_iopub_msg()
+            l.debug('KERNEL BEFORE SHELL {}', self.new_kernel_started)
+            self._print_to_buffer(
+                ['Jupyter {implementation_version} /'
+                 ' Python {language_info[version]}'
+                 .format(**self.kc.get_shell_msg()['content']),
+                 '']
+            )
+        except (OSError, FileNotFoundError):
+            self._error(msg='Could not find connection file. Not connected!',
+                        command='JKernel')
+            l.debug('KERNEL EXCEPT')
 
     @nv.command('JExecute', range='')
     def execute_handler(self, r):
@@ -121,6 +129,63 @@ class NVimJupyter:
         if self.new_kernel_started is True:
             self.kc.shutdown()
 
+    def _connect_to_kernel(self, args):
+        """Start new or connect to existing `Jupyter` kernel
+
+        Parameters
+        ----------
+        args: argparse.ArgumentParser parsed arguments
+            Arguments given to `JKernel` command through `neovim`.
+
+        Returns
+        -------
+        kc: jupyter_client.KernelClient
+            The kernel client in charge of negotiating communication between
+            `neovim` and the `Jupyter` kernel.
+        new_kernel_started: bool
+            Flag to keep track of new / existing kernel.
+        """
+        l.debug('ARGS {}'.format(args))
+        if args.existing is not None:
+            connection_file = jc.find_connection_file(
+                filename=args.existing[0]
+            )
+            km = jc.KernelManager(connection_file=connection_file)
+            km.load_connection_file()
+            new_kernel_started = False
+        else:
+            km = jc.KernelManager()
+            km.start_kernel()
+            new_kernel_started = True
+        kc = km.client()
+        kc.start_channels()
+        return kc, new_kernel_started
+
+    def _set_buffer(self):
+        """Create new scratch buffer in neovim for feedback from kernel
+
+        Returns
+        -------
+        buffer: `neovim` buffer
+            The newly created buffer object.
+        """
+        self.nvim.command('{height}new'.format(
+            height=int(self.nvim.current.window.height * 0.3))
+        )
+        # TODO: name the buffer depending on kernel name
+        self.nvim.current.buffer.name = '[IPython]'
+        self.nvim.current.buffer.options['buftype'] = 'nofile'
+        self.nvim.current.buffer.options['bufhidden'] = 'hide'
+        self.nvim.current.buffer.options['swapfile'] = False
+        self.nvim.current.buffer.options['readonly'] = True
+        self.nvim.current.buffer.options['filetype'] = 'python'
+        self.nvim.current.buffer.options['syntax'] = 'python'
+        self.nvim.command('syntax enable')
+        buffer = self.nvim.current.buffer
+        window = self.nvim.current.window
+        self.nvim.command('wincmd j')
+        return buffer, window
+
     def _print_to_buffer(self, msg):
         self.buffer.options['readonly'] = False
         if isinstance(msg, (str, list)):
@@ -136,3 +201,15 @@ class NVimJupyter:
         self.buffer.append('In [ ]')
         self.buffer.options['readonly'] = True
         self.window.cursor = len(self.buffer), 0
+
+    def _echo(self, msg, command='', hl='NormalMsg'):
+        command = command + ': ' if command is not '' else command
+        self.nvim.command('echohl {hl} | echom "{command}{msg}" |'
+                          ' echohl NormalMsg'
+                          .format(command=command, msg=msg, hl=hl))
+
+    def _warning(self, msg, command=''):
+        self._echo(msg, command=command, hl='WarningMsg')
+
+    def _error(self, msg, command=''):
+        self._echo(msg, command=command, hl='ErrorMsg')

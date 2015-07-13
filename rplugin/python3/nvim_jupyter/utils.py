@@ -1,8 +1,6 @@
 import argparse
-import jupyter_client as jc
 import logging
 import logging.config
-import os.path as osp
 from . import config as c
 
 
@@ -22,77 +20,6 @@ def set_argparser(args_to_set):
         for arg, opts in args_to_set[command].items():
             subparser.add_argument(*arg, **opts)
     return argp
-
-
-def set_buffer(nvim):
-    """Create new scratch buffer in neovim for feedback from kernel
-
-    Returns
-    -------
-    buffer: `neovim` buffer
-        The newly created buffer object.
-    """
-    nvim.command('{height}new'.format(
-        height=int(nvim.current.window.height * 0.3))
-    )
-    nvim.current.buffer.name = '[IPython]'
-    nvim.current.buffer.options['buftype'] = 'nofile'
-    nvim.current.buffer.options['bufhidden'] = 'hide'
-    nvim.current.buffer.options['swapfile'] = False
-    nvim.current.buffer.options['readonly'] = True
-    nvim.current.buffer.options['filetype'] = 'python'
-    nvim.current.buffer.options['syntax'] = 'python'
-    nvim.command('syntax enable')
-    buffer = nvim.current.buffer
-    window = nvim.current.window
-    nvim.command('wincmd j')
-    return buffer, window
-
-
-def connect_to_existing_kernel(filehint):
-    """Connect to existing `jupyter` kernel
-
-    Parameters
-    ----------
-    filehint: str
-        The `*` (star) in `kernel-*.json` or the absolute file path to the
-        kernel connection file.
-
-    Returns
-    -------
-    kc: jupyter_client.KernelClient
-        The kernel client in charge of negotiating communication between
-        `neovim` and the `jupyter` kernel.
-    """
-    connection_file = (filehint
-                       if osp.sep in filehint
-                       else jc.find_connection_file(filehint))
-    km = jc.KernelManager(connection_file=connection_file)
-    km.load_connection_file()
-    kc = km.client()
-    kc.start_channels()
-    return kc
-
-
-def connect_to_new_kernel(args):
-    """Start and connect to new `jupyter` kernel
-
-    Parameters
-    ----------
-    args: argparse.ArgumentParser parsed arguments
-        Arguments given to `JConnect` command through `neovim`.
-
-    Returns
-    -------
-    kc: jupyter_client.KernelClient
-        The kernel client in charge of negotiating communication between
-        `neovim` and the `jupyter` kernel.
-    """
-    km = jc.KernelManager()
-    km.start_kernel()
-    kc = km.client()
-    kc.start_channels()
-    return kc
 
 
 def get_iopub_msg(kc, msg_id):
@@ -133,9 +60,10 @@ def format_msg(msg):
 
     for key in c.messages:
         try:
-            formatted_msg[key] = (strip_colors(c.messages[key]
-                                               .format(**formatted_msg))
-                                  .strip().split('\n'))
+            formatted_msg[key] = (
+                c.color_regex.sub('', c.messages[key].format(**formatted_msg))
+                .strip().split('\n')
+            )
             if key != 'in':
                 formatted_msg[key] += ['']
         except KeyError:
@@ -143,12 +71,6 @@ def format_msg(msg):
     l.debug('FORMATTED {}'.format(formatted_msg))
 
     return formatted_msg
-
-
-def strip_colors(s):
-    l.debug('COLOR_REG {}'.format(c.color_regex))
-    l.debug('COLOR STR {}'.format(s))
-    return c.color_regex.sub('', s)
 
 
 def decode_args(nvim, args):

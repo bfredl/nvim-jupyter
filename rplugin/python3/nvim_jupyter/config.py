@@ -22,7 +22,8 @@ logger_config = {
 
 
 args_to_set = {
-    'JConnect': {('--existing',): {'nargs': 1}}
+    'JKernel': {('-e', '--existing'): {'nargs': '?',
+                                       'const': ['kernel-*.json']}}
 }
 
 messages = OrderedDict(

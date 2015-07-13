@@ -1,20 +1,24 @@
 # nvim-jupyter
 
-Flexible [neovim] - [Jupyter] kernel interaction. Augments [neovim] with the following
-functionality:
+Flexible [neovim] - [Jupyter] kernel interaction. Augments [neovim] with the
+following functionality:
 
-- `(c) JConnect [--existing filehint]` - **first connect to kernel**
+- `(c) JKernel [-e/--existing [filehint]]` - **first connect to kernel**
 
-  connect to new or existing kernel (using the `[--existing filehint]`)
+  connect to new or existing kernel (using the `[-e/--existing [filehint]]`)
   argument, where `[filehint]` is either the `*` (star) in `kernel-*.json`
-  or the absolute path of the connection file.
+  or the absolute path of the connection file. If `JKernel` is used without any
+  arguments then it starts a new kernel. If `-e/--existing` is provided
+  (without the optional [filehint]) then an attempt to connect to an existing
+  kernel is made. If kernel is not found then it doesn't create a new kernel.
+  If [filehint] is given and not found, again, it doesn't create a kernel.
 
 - `(c) [range]JExecute`
 
   send current line to be executed by the kernel or if `[range]` is given
   execute the appropriate lines. This also works with visual selections
   (including block selections). Example:
-  ```
+  ```python
   bla bla bla print('test') more bla
   some bla    test = 5; test
   ```
