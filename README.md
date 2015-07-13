@@ -28,7 +28,7 @@ git clone git@github.com:razvanc87/nvim-jupyter.git
 ln -sf $HOME/nvim-jupyter $HOME/.nvim
 ```
 
-_After installation_ don't forget to run `:UpdateRemotePlugins` in [neovim]!
+_After installation_ don't forget to run `:UpdateRemotePlugins` in [neovim]! **WARNING: at the moment, the plugin creates an `nvim_jupyter.log` file in the plugin's direcotry, but it isn't monitored in any way, so it can grow indefintely** (probaly not a huge problem, but just something to be aware of).
 
 
 ## motivation
@@ -92,7 +92,13 @@ high with this first attempt and I hope I won't let anyone down!
 ## objectives
 
 - [ ] local kernel communication
+  - [ ] run code (with proper feedback)
+  - [ ] code introspection
+  - [ ] code completion
 - [ ] remote kernel communication
+  - [ ] run code (with proper feedback)
+  - [ ] code introspection
+  - [ ] code completion
 - [ ] work with any kernel
 - [x] work from any file (not just programming language source files)
 - [ ] for `ipykernel` work with `%matplotlib inline` seamlessly
