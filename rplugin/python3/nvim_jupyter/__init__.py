@@ -104,10 +104,11 @@ class NVimJupyter:
         """
         (x0, y0), (x1, y1) = (self.nvim.current.buffer.mark('<'),
                               self.nvim.current.buffer.mark('>'))
+        y0, y1 = min(y0, y1), max(y0, y1)
         if x0 == y0 == x1 == y1 == 0:
             (x0, x1), (y0, y1) = r, (0, c.MAX_I)
-        code = '\n'.join(l[y0:y1 + 1] if x1 < y1 else l[y1:y0 + 1]
-                         for l in self.nvim.current.buffer[x0 - 1:x1])
+        code = '\n'.join(line[y0:y1 + 1]
+                         for line in self.nvim.current.buffer[x0 - 1:x1])
         msg_id = self.kc.execute(code)
         msg = u.get_iopub_msg(self.kc, msg_id)
         self._print_to_buffer(msg)
@@ -132,6 +133,6 @@ class NVimJupyter:
                     self.buffer.append(msg[key])
                 except KeyError:
                     pass
-        self.buffer.append('In []')
+        self.buffer.append('In [ ]')
         self.buffer.options['readonly'] = True
         self.window.cursor = len(self.buffer), 0
