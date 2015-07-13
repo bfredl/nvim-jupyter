@@ -9,9 +9,9 @@ following functionality:
   argument, where `[filehint]` is either the `*` (star) in `kernel-*.json`
   or the absolute path of the connection file. If `JKernel` is used without any
   arguments then it starts a new kernel. If `-e/--existing` is provided
-  (without the optional [filehint]) then an attempt to connect to an existing
+  (without the optional `[filehint]`) then an attempt to connect to an existing
   kernel is made. If kernel is not found then it doesn't create a new kernel.
-  If [filehint] is given and not found, again, it doesn't create a kernel.
+  If `[filehint]` is given and not found, again, it doesn't create a kernel.
 
 - `(c) [range]JExecute`
 
