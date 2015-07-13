@@ -24,7 +24,7 @@ functionality:
   doesn't have any leading whitespace. In the more usual case, `print('test')`
   and `test = 5; test` can be selected one at a time and the execution proceeds
   as expected. _This upgrade of `JExecute` doesn't add new functions or
-  commands to `neovim` so it is quite natural to use_
+  commands to [neovim] so it is quite natural to use_
 
 Legend `(c)` = command
 
@@ -116,7 +116,7 @@ high with this first attempt and I hope I won't let anyone down!
 - [ ] for `ipykernel` work with `%matplotlib inline` seamlessly
 - [ ] collaborative work?!
 
-# todo
+## todo
 
 - [ ] strip leading whitespace if single line is sent to kernel. In all other cases strip right whitespace
 
