@@ -58,7 +58,6 @@ class NVimJupyter:
         self.argp = u.set_argparser(c.args_to_set)
         self.new_kernel_started = None
         self.buffer = None
-        self.r = None
         self.window = None
         self.kc = None
 
@@ -76,14 +75,17 @@ class NVimJupyter:
         There's a problem: `neovim` passes a `list` of `bytes` instead of
         `str`. Need to manually decode them.
         """
+        # allow only one connection
+        if self.kc is not None return
+
         args = u.decode_args(self.nvim, args)
         args = self.argp.parse_args(['JKernel'] + args)
         try:
             l.debug('KERNEL START')
             self.kc, self.new_kernel_started = self._connect_to_kernel(args)
             l.debug('KERNEL BUFF')
-            if self.buffer is None:
-                self.buffer, self.window = self._set_buffer()
+            # this should be executed once only anyway
+            self.buffer, self.window = self._set_buffer_and_window()
             # consume first iopub message (starting)
             self.kc.get_iopub_msg()
             l.debug('KERNEL BEFORE SHELL {}', self.new_kernel_started)
@@ -164,18 +166,21 @@ class NVimJupyter:
         kc.start_channels()
         return kc, new_kernel_started
 
-    def _set_buffer(self):
+    def _set_buffer_and_window(self):
         """Create new scratch buffer in neovim for feedback from kernel
 
         Returns
         -------
         buffer: `neovim` buffer
             The newly created buffer object.
+        window: `neovim` window
+            The window associated with `buffer`.
         """
         self.nvim.command('{height}new'.format(
             height=int(self.nvim.current.window.height * 0.3))
         )
-        # TODO: name the buffer depending on kernel name
+        # TODO: these will need to be changed based on the response from
+        #       the kernel
         self.nvim.current.buffer.name = '[IPython]'
         self.nvim.current.buffer.options['buftype'] = 'nofile'
         self.nvim.current.buffer.options['bufhidden'] = 'hide'
