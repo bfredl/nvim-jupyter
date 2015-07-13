@@ -12,7 +12,19 @@ functionality:
 - `(c) [range]JExecute`
 
   send current line to be executed by the kernel or if `[range]` is given
-  execute the appropriate lines.
+  execute the appropriate lines. This also works with visual selections
+  (including block selections). Example:
+  ```
+  bla bla bla print('test') more bla
+  some bla    test = 5; test
+  ```
+  it is possible here (for whatever reason) to select the text made out of
+  `print('test')` and `test = 5; test` and it will execute as if it were
+  two lines of code (think of `IPython`). This works because the selection
+  doesn't have any leading whitespace. In the more usual case, `print('test')`
+  and `test = 5; test` can be selected one at a time and the execution proceeds
+  as expected. _This upgrade of `JExecute` doesn't add new functions or
+  commands to `neovim` so it is quite natural to use_
 
 Legend `(c)` = command
 
@@ -103,6 +115,10 @@ high with this first attempt and I hope I won't let anyone down!
 - [x] work from any file (not just programming language source files)
 - [ ] for `ipykernel` work with `%matplotlib inline` seamlessly
 - [ ] collaborative work?!
+
+# todo
+
+- [ ] strip leading whitespace if single line is sent to kernel. In all other cases strip right whitespace
 
 Stay tuned, more to come!
 
