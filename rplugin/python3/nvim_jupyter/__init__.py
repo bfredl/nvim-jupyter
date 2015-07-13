@@ -41,6 +41,7 @@ class NVimJupyter:
         self.argp = u.set_argparser(c.args_to_set)
         self.new_kernel_started = None
         self.buffer = None
+        self.r = None
         self.window = None
         self.kc = None
 
@@ -70,10 +71,10 @@ class NVimJupyter:
             self.buffer, self.window = u.set_buffer(self.nvim)
         # consume first iopub message (starting)
         self.kc.get_iopub_msg()
-        msg = self.kc.get_shell_msg()['content']
         self._print_to_buffer(
             ['Jupyter {implementation_version} /'
-             ' Python {language_info[version]}'.format(**msg),
+             ' Python {language_info[version]}'
+             .format(**self.kc.get_shell_msg()['content']),
              '']
         )
 
@@ -89,9 +90,13 @@ class NVimJupyter:
             A list of two numbers representing the beginning and finish of the
             `neovim` range object.
         """
-        r0, r1 = r
-        lines = '\n'.join(self.nvim.current.buffer[r0 - 1:r1])
-        msg_id = self.kc.execute(lines)
+        (x0, y0), (x1, y1) = (self.nvim.current.buffer.mark('<'),
+                              self.nvim.current.buffer.mark('>'))
+        if x0 == y0 == x1 == y1 == 0:
+            (x0, x1), (y0, y1) = r, (0, c.MAX_I)
+        code = '\n'.join(l[y0:y1 + 1] if x1 < y1 else l[y1:y0 + 1]
+                         for l in self.nvim.current.buffer[x0 - 1:x1])
+        msg_id = self.kc.execute(code)
         msg = u.get_iopub_msg(self.kc, msg_id)
         self._print_to_buffer(msg)
 

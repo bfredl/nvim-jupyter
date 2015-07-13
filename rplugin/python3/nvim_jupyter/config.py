@@ -4,6 +4,9 @@ import re
 import sys
 
 
+MAX_I = 2147483647
+
+
 logger_config = {
     'version': 1,
     'handlers': {'file': {'class': 'logging.FileHandler',
