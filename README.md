@@ -3,15 +3,15 @@
 Flexible [neovim] - [Jupyter] kernel interaction. Augments [neovim] with the
 following functionality:
 
-- `(c) JKernel [-e/--existing [filehint]]` - **first connect to kernel**
+- `(c) JKernel [-e/--existing [EXISTING]]` - **first connect to kernel**
 
-  connect to new or existing kernel (using the `[-e/--existing [filehint]]`)
-  argument, where `[filehint]` is either the `*` (star) in `kernel-*.json`
+  connect to new or existing kernel (using the `[-e/--existing [EXISTING]]`)
+  argument, where `[EXISTING]` is either the `*` (star) in `kernel-*.json`
   or the absolute path of the connection file. If `JKernel` is used without any
   arguments then it starts a new kernel. If `-e/--existing` is provided
-  (without the optional `[filehint]`) then an attempt to connect to an existing
+  (without the optional `[EXISTING]`) then an attempt to connect to an existing
   kernel is made. If kernel is not found then it doesn't create a new kernel.
-  If `[filehint]` is given and not found, again, it doesn't create a kernel.
+  If `[EXISTING]` is given and not found, again, it doesn't create a kernel.
 
 - `(c) [range]JExecute`
 
