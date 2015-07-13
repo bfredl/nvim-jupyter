@@ -23,7 +23,7 @@ functionality:
   doesn't have any leading whitespace. In the more usual case, `print('test')`
   and `test = 5; test` can be selected one at a time and the execution proceeds
   as expected. _This upgrade of `JExecute` doesn't add new functions or
-  commands to `neovim` so it is quite natural to use_
+  commands to [neovim] so it is quite natural to use_
 
 Legend `(c)` = command
 
