@@ -92,7 +92,13 @@ high with this first attempt and I hope I won't let anyone down!
 ## objectives
 
 - [ ] local kernel communication
+  - [ ] run code (with proper feedback)
+  - [ ] code introspection
+  - [ ] code completion
 - [ ] remote kernel communication
+  - [ ] run code (with proper feedback)
+  - [ ] code introspection
+  - [ ] code completion
 - [ ] work with any kernel
 - [x] work from any file (not just programming language source files)
 - [ ] for `ipykernel` work with `%matplotlib inline` seamlessly
