@@ -116,9 +116,9 @@ class NVimJupyter:
         if x0 == y0 == x1 == y1 == 0:
             (y0, y1), (x0, x1) = r, (0, c.MAX_I)
         x1, y0 = x1 + 1, y0 - 1
-        code = '\n'.join(u.strip_whitespace(line[x0:x1])
+        code = '\n'.join(line[x0:x1].strip()
                          if y1 - y0 == 1 else
-                         u.strip_whitespace(line[x0:x1], how='right')
+                         line[x0:x1].rstrip()
                          for line in self.nvim.current.buffer[y0:y1])
         msg_id = self.kc.execute(code)
         msg = u.get_iopub_msg(self.kc, msg_id)

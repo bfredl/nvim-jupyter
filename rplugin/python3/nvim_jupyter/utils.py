@@ -72,14 +72,6 @@ def format_msg(msg):
     return formatted_msg
 
 
-def strip_whitespace(s, how='all'):
-    if how == 'all':
-        s = s.strip()
-    elif how == 'right':
-        s = s.rstrip()
-    return s
-
-
 def decode_args(nvim, args):
     """Helper function to decode from `bytes` to `str`
 
