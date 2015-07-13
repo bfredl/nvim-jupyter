@@ -76,7 +76,8 @@ class NVimJupyter:
         `str`. Need to manually decode them.
         """
         # allow only one connection
-        if self.kc is not None return
+        if self.kc is not None:
+            return
 
         args = u.decode_args(self.nvim, args)
         args = self.argp.parse_args(['JKernel'] + args)
@@ -115,13 +116,18 @@ class NVimJupyter:
         (y0, x0), (y1, x1) = (self.nvim.current.buffer.mark('<'),
                               self.nvim.current.buffer.mark('>'))
         x0, x1 = min(x0, x1), max(x0, x1)
-        if x0 == y0 == x1 == y1 == 0:
+        l.debug('MARKS {}'.format((x0, x1, y0, y1)))
+        # for some reason `:delmarks` doesn't reset `'>` to `(0, 0)` but to
+        # `(c.MAX_I, 0)`
+        if x0 == y0 == y1 == 0 and x1 in [0, c.MAX_I]:
             (y0, y1), (x0, x1) = r, (0, c.MAX_I)
         x1, y0 = x1 + 1, y0 - 1
         code = '\n'.join(line[x0:x1].strip()
                          if y1 - y0 == 1 else
                          line[x0:x1].rstrip()
                          for line in self.nvim.current.buffer[y0:y1])
+        # for the time being deleting the marks will have to do
+        self.nvim.command('delmarks <>')
         msg_id = self.kc.execute(code)
         msg = u.get_iopub_msg(self.kc, msg_id)
         self._print_to_buffer(msg)

@@ -55,14 +55,14 @@ def format_msg(msg):
         msg['code'][:1] +
         '\n{whitespace}...: '
         .format(whitespace=' ' * (2 + len(str(msg['execution_count']))))
-        .join(msg['code'][1:].split('\n'))
+        .join(msg['code'][1:].splitlines())
     )
 
     for key in c.messages:
         try:
             formatted_msg[key] = (
                 c.color_regex.sub('', c.messages[key].format(**formatted_msg))
-                .strip().split('\n')
+                .strip().splitlines()
             )
             if key != 'in':
                 formatted_msg[key] += ['']
