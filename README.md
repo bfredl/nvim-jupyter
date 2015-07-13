@@ -116,11 +116,6 @@ high with this first attempt and I hope I won't let anyone down!
 - [ ] for `ipykernel` work with `%matplotlib inline` seamlessly
 - [ ] collaborative work?!
 
-## todo
-
-- [ ] strip leading whitespace if single line is sent to kernel. In all other cases strip right whitespace
-
-Stay tuned, more to come!
 
 [neovim]: https://github.com/neovim/neovim
 [Jupyter]: https://github.com/jupyter/jupyter
