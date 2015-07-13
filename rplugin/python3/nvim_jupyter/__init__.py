@@ -110,13 +110,16 @@ class NVimJupyter:
             A list of two numbers representing the beginning and finish of the
             `neovim` range object.
         """
-        (x0, y0), (x1, y1) = (self.nvim.current.buffer.mark('<'),
+        (y0, x0), (y1, x1) = (self.nvim.current.buffer.mark('<'),
                               self.nvim.current.buffer.mark('>'))
-        y0, y1 = min(y0, y1), max(y0, y1)
+        x0, x1 = min(x0, x1), max(x0, x1)
         if x0 == y0 == x1 == y1 == 0:
-            (x0, x1), (y0, y1) = r, (0, c.MAX_I)
-        code = '\n'.join(line[y0:y1 + 1]
-                         for line in self.nvim.current.buffer[x0 - 1:x1])
+            (y0, y1), (x0, x1) = r, (0, c.MAX_I)
+        x1, y0 = x1 + 1, y0 - 1
+        code = '\n'.join(u.strip_whitespace(line[x0:x1])
+                         if y1 - y0 == 1 else
+                         u.strip_whitespace(line[x0:x1], how='right')
+                         for line in self.nvim.current.buffer[y0:y1])
         msg_id = self.kc.execute(code)
         msg = u.get_iopub_msg(self.kc, msg_id)
         self._print_to_buffer(msg)

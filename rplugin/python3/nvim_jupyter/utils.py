@@ -69,8 +69,15 @@ def format_msg(msg):
         except KeyError:
             pass
     l.debug('FORMATTED {}'.format(formatted_msg))
-
     return formatted_msg
+
+
+def strip_whitespace(s, how='all'):
+    if how == 'all':
+        s = s.strip()
+    elif how == 'right':
+        s = s.rstrip()
+    return s
 
 
 def decode_args(nvim, args):
