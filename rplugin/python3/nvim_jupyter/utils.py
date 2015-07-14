@@ -22,30 +22,6 @@ def set_argparser(args_to_set):
     return argp
 
 
-def get_iopub_msg(kc, msg_id):
-    '''Get the iopub socket message after execution
-    '''
-    msg = {}
-    while True:
-        iopub_msg = kc.get_iopub_msg()
-        l.debug('IOPUB {}'.format(iopub_msg))
-        if (
-            iopub_msg['parent_header']['msg_id'] == msg_id and
-            iopub_msg['msg_type'] in c.msg_types
-        ):
-            for key in iopub_msg['content']:
-                msg[key] = iopub_msg['content'][key]
-                if isinstance(msg[key], list):
-                    msg[key] = '\n'.join(msg[key])
-        if (
-            iopub_msg['parent_header']['msg_type'] != 'kernel_info_request' and
-            iopub_msg['msg_type'] == 'status' and
-            iopub_msg['content']['execution_state'] == 'idle'
-        ):
-            break
-    return msg
-
-
 def format_msg(msg):
     '''Pretty format the message for output to `neovim` buffer
     '''

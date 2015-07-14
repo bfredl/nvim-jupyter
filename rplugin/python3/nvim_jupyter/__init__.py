@@ -117,19 +117,21 @@ class NVimJupyter:
                               self.nvim.current.buffer.mark('>'))
         x0, x1 = min(x0, x1), max(x0, x1)
         l.debug('MARKS {}'.format((x0, x1, y0, y1)))
-        # for some reason `:delmarks` doesn't reset `'>` to `(0, 0)` but to
-        # `(c.MAX_I, 0)`
-        if x0 == y0 == y1 == 0 and x1 in [0, c.MAX_I]:
+        # it's enough to verify that the rows are `(0, 0)` because
+        # `neovim` valid row numbering starts at 1
+        if y0 == y1 == 0:
             (y0, y1), (x0, x1) = r, (0, c.MAX_I)
+        else:
+            # for the time being deleting the marks will have to do (but only
+            # in case there is an initial selection)
+            self.nvim.command('delmarks <>')
         x1, y0 = x1 + 1, y0 - 1
         code = '\n'.join(line[x0:x1].strip()
                          if y1 - y0 == 1 else
                          line[x0:x1].rstrip()
                          for line in self.nvim.current.buffer[y0:y1])
-        # for the time being deleting the marks will have to do
-        self.nvim.command('delmarks <>')
         msg_id = self.kc.execute(code)
-        msg = u.get_iopub_msg(self.kc, msg_id)
+        msg = self._get_iopub_msg(msg_id)
         self._print_to_buffer(msg)
 
     @nv.shutdown_hook
@@ -139,6 +141,34 @@ class NVimJupyter:
         l.debug('shutdown hook')
         if self.new_kernel_started is True:
             self.kc.shutdown()
+
+    def _set_buffer_and_window(self):
+        """Create new scratch buffer in neovim for feedback from kernel
+
+        Returns
+        -------
+        buffer: `neovim` buffer
+            The newly created buffer object.
+        window: `neovim` window
+            The window associated with `buffer`.
+        """
+        self.nvim.command('{height}new'.format(
+            height=int(self.nvim.current.window.height * 0.3))
+        )
+        # TODO: these will need to be changed based on the response from
+        #       the kernel
+        self.nvim.current.buffer.name = '[IPython]'
+        self.nvim.current.buffer.options['buftype'] = 'nofile'
+        self.nvim.current.buffer.options['bufhidden'] = 'hide'
+        self.nvim.current.buffer.options['swapfile'] = False
+        self.nvim.current.buffer.options['readonly'] = True
+        self.nvim.current.buffer.options['filetype'] = 'python'
+        self.nvim.current.buffer.options['syntax'] = 'python'
+        self.nvim.command('syntax enable')
+        buffer = self.nvim.current.buffer
+        window = self.nvim.current.window
+        self.nvim.command('wincmd j')
+        return buffer, window
 
     def _connect_to_kernel(self, args):
         """Start new or connect to existing `Jupyter` kernel
@@ -172,33 +202,28 @@ class NVimJupyter:
         kc.start_channels()
         return kc, new_kernel_started
 
-    def _set_buffer_and_window(self):
-        """Create new scratch buffer in neovim for feedback from kernel
-
-        Returns
-        -------
-        buffer: `neovim` buffer
-            The newly created buffer object.
-        window: `neovim` window
-            The window associated with `buffer`.
-        """
-        self.nvim.command('{height}new'.format(
-            height=int(self.nvim.current.window.height * 0.3))
-        )
-        # TODO: these will need to be changed based on the response from
-        #       the kernel
-        self.nvim.current.buffer.name = '[IPython]'
-        self.nvim.current.buffer.options['buftype'] = 'nofile'
-        self.nvim.current.buffer.options['bufhidden'] = 'hide'
-        self.nvim.current.buffer.options['swapfile'] = False
-        self.nvim.current.buffer.options['readonly'] = True
-        self.nvim.current.buffer.options['filetype'] = 'python'
-        self.nvim.current.buffer.options['syntax'] = 'python'
-        self.nvim.command('syntax enable')
-        buffer = self.nvim.current.buffer
-        window = self.nvim.current.window
-        self.nvim.command('wincmd j')
-        return buffer, window
+    def _get_iopub_msg(self, msg_id):
+        '''Get the iopub socket message after execution
+        '''
+        msg = {}
+        while True:
+            iopub_msg = self.kc.get_iopub_msg()
+            l.debug('IOPUB {}'.format(iopub_msg))
+            if (
+                iopub_msg['parent_header']['msg_id'] == msg_id and
+                iopub_msg['msg_type'] in c.msg_types
+            ):
+                for key in iopub_msg['content']:
+                    msg[key] = iopub_msg['content'][key]
+                    if isinstance(msg[key], list):
+                        msg[key] = '\n'.join(msg[key])
+            if (
+                iopub_msg['parent_header']['msg_type'] != 'kernel_info_request'
+                and iopub_msg['msg_type'] == 'status'
+                and iopub_msg['content']['execution_state'] == 'idle'
+            ):
+                break
+        return msg
 
     def _print_to_buffer(self, msg):
         self.buffer.options['readonly'] = False
