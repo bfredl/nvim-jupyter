@@ -23,7 +23,7 @@ logger_config = {
 
 args_to_set = {
     'JKernel': {('-e', '--existing'): {'nargs': '?',
-                                       'const': ['kernel-*.json']}}
+                                       'const': 'kernel-*.json'}}
 }
 
 messages = OrderedDict(

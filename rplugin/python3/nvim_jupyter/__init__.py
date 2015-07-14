@@ -98,7 +98,7 @@ class NVimJupyter:
             )
         except (OSError, FileNotFoundError):
             self._error(msg='Could not find connection file. Not connected!',
-                        command='JKernel')
+                        prefix='[JKernel]: ')
             l.debug('KERNEL EXCEPT')
 
     @nv.command('JExecute', range='')
@@ -188,9 +188,8 @@ class NVimJupyter:
         """
         l.debug('ARGS {}'.format(args))
         if args.existing is not None:
-            connection_file = jc.find_connection_file(
-                filename=args.existing[0]
-            )
+            connection_file = jc.find_connection_file(filename=args.existing)
+            l.debug('CONNECT {}, {}'.format(connection_file, args.existing))
             km = jc.KernelManager(connection_file=connection_file)
             km.load_connection_file()
             new_kernel_started = False
@@ -241,14 +240,13 @@ class NVimJupyter:
         self.buffer.options['readonly'] = True
         self.window.cursor = len(self.buffer), 0
 
-    def _echo(self, msg, command='', hl='NormalMsg'):
-        command = command + ': ' if command is not '' else command
-        self.nvim.command('echohl {hl} | echom "{command}{msg}" |'
+    def _echo(self, msg, prefix='', hl='NormalMsg'):
+        self.nvim.command('echohl {hl} | echom "{prefix}{msg}" |'
                           ' echohl NormalMsg'
-                          .format(command=command, msg=msg, hl=hl))
+                          .format(msg=msg, prefix=prefix, hl=hl))
 
-    def _warning(self, msg, command=''):
-        self._echo(msg, command=command, hl='WarningMsg')
+    def _warning(self, msg, prefix=''):
+        self._echo(msg, prefix=prefix, hl='WarningMsg')
 
-    def _error(self, msg, command=''):
-        self._echo(msg, command=command, hl='ErrorMsg')
+    def _error(self, msg, prefix=''):
+        self._echo(msg, prefix=prefix, hl='ErrorMsg')
