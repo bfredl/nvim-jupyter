@@ -1,4 +1,6 @@
 [![Stories in Ready](https://badge.waffle.io/razvanc87/nvim-jupyter.png?label=ready&title=Ready)](https://waffle.io/razvanc87/nvim-jupyter)
+[![Stories in "In Progress"](https://badge.waffle.io/razvanc87/nvim-jupyter.png?label=in%20progress&title=In Progress)](https://waffle.io/razvanc87/nvim-jupyter)
+
 # nvim-jupyter
 
 Flexible [neovim] - [Jupyter] kernel interaction. Augments [neovim] with the
