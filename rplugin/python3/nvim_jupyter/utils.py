@@ -47,12 +47,3 @@ def format_msg(msg):
     l.debug('FORMATTED {}'.format(formatted_msg))
     return formatted_msg
 
-
-def decode_args(nvim, args):
-    """Helper function to decode from `bytes` to `str`
-
-    `neovim` has some issues with encoding in Python3.
-    """
-    encoding = nvim.eval('&encoding')
-    return [arg.decode(encoding) if isinstance(arg, bytes) else arg
-            for arg in args]

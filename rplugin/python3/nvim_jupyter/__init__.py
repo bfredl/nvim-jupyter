@@ -54,7 +54,7 @@ class NVimJupyter:
         nvim: object
             The `neovim` communication channel.
         """
-        self.nvim = nvim.with_hook(nv.DecodeHook())
+        self.nvim = nvim
         self.argp = u.set_argparser(c.args_to_set)
         self.new_kernel_started = None
         self.buffer = None
@@ -69,17 +69,11 @@ class NVimJupyter:
         ----------
         args: list of str
             Arguments passed from `neovim`.
-
-        Notes
-        -----
-        There's a problem: `neovim` passes a `list` of `bytes` instead of
-        `str`. Need to manually decode them.
         """
         # allow only one connection
         if self.kc is not None:
             return
 
-        args = u.decode_args(self.nvim, args)
         args = self.argp.parse_args(['JKernel'] + args)
         try:
             l.debug('KERNEL START')
